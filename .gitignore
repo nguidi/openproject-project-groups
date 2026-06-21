@@ -1,0 +1,11 @@
+*.gem
+*.rbc
+/.bundle/
+/vendor/bundle
+/pkg/
+/tmp/
+/log/
+Gemfile.lock
+.byebug_history
+.ruby-version
+.DS_Store

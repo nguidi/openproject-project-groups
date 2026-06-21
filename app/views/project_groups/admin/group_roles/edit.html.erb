@@ -1,0 +1,41 @@
+<% html_title t(:label_administration), t("project_groups.admin.edit_title", group: @group.name) %>
+
+<%= render(Primer::OpenProject::PageHeader.new) do |header|
+      header.with_title { t("project_groups.admin.edit_title", group: @group.name) }
+      header.with_description { t("project_groups.admin.edit_intro") }
+      header.with_breadcrumbs(
+        [{ href: admin_index_path, text: t("label_administration") },
+         { href: admin_settings_users_path, text: t(:label_user_and_permission) },
+         { href: project_groups_admin_group_roles_path, text: t("project_groups.admin.title") },
+         @group.name]
+      )
+    end %>
+
+<%= form_with url: project_groups_admin_group_role_path(@group), method: :patch do %>
+  <%= render(Primer::Beta::BorderBox.new(mb: 3)) do |box| %>
+    <% box.with_header do |header| %>
+      <% header.with_title(tag: :h2) do %><%= t("project_groups.label_roles") %><% end %>
+    <% end %>
+
+    <% if @selectable_roles.empty? %>
+      <% box.with_row do %>
+        <span class="color-fg-muted"><%= t("project_groups.admin.no_roles_available") %></span>
+      <% end %>
+    <% else %>
+      <% @selectable_roles.each do |role| %>
+        <% box.with_row do %>
+          <label class="d-flex flex-items-center" style="gap: .5rem; margin: 0; cursor: pointer;">
+            <%= check_box_tag "role_ids[]", role.id, @selected_role_ids.include?(role.id), id: "pg_role_#{role.id}" %>
+            <%= role.name %>
+          </label>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <div class="d-flex flex-items-center" style="gap: .5rem;">
+    <%= render(Primer::Beta::Button.new(scheme: :primary, type: :submit)) { t("project_groups.admin.button_save") } %>
+    <%= render(Primer::Beta::Button.new(tag: :a, scheme: :default,
+                                        href: project_groups_admin_group_roles_path)) { t(:button_cancel) } %>
+  </div>
+<% end %>

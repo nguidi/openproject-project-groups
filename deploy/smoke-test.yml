@@ -1,0 +1,56 @@
+# Runtime smoke test of the built production image against a throwaway Postgres.
+# Boots OpenProject in PRODUCTION mode (eager loads everything), loads the schema,
+# runs our migrations, and asserts the plugin is wired up.
+#
+#   docker build -f deploy/Dockerfile --build-arg OPENPROJECT_TAG=17 \
+#                -t openproject-project-groups:17 .
+#   docker compose -f deploy/smoke-test.yml up --abort-on-container-exit \
+#                  --exit-code-from smoke-app
+#   docker compose -f deploy/smoke-test.yml down -v
+name: pg-smoke
+services:
+  smoke-db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: openproject
+      POSTGRES_PASSWORD: openproject
+      POSTGRES_DB: openproject
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openproject"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  smoke-app:
+    image: ${SMOKE_IMAGE:-openproject-project-groups:17}
+    depends_on:
+      smoke-db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: "postgresql://openproject:openproject@smoke-db/openproject"
+      SECRET_KEY_BASE: "smoke-test-secret-key-base"
+      OPENPROJECT_HOST__NAME: "localhost"
+      OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_RAILS__CACHE__STORE: "file_store"
+      DISABLE_DATABASE_ENVIRONMENT_CHECK: "1"
+    volumes:
+      - ./smoke_check.rb:/tmp/smoke_check.rb:ro
+    # Initialise the DB in an image-agnostic way: the all-in-one image ships
+    # db/structure.sql (load it, then apply our newer plugin migrations); the slim
+    # image deliberately omits structure.sql, so build the schema from migration
+    # history instead (OpenProject's CI relies on the same db:migrate-from-scratch
+    # path — see docker/ci/entrypoint.sh). Then assert the plugin is wired up.
+    command:
+      - "bash"
+      - "-lc"
+      - |
+        set -e
+        if [ -f db/structure.sql ]; then
+          echo "[smoke] structure.sql present -> load schema + migrate"
+          bundle exec rake db:schema:load db:migrate
+        else
+          echo "[smoke] slim image (no structure.sql) -> migrate from scratch"
+          bundle exec rake db:migrate
+        fi
+        bundle exec rails runner /tmp/smoke_check.rb

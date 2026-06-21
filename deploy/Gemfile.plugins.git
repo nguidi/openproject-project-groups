@@ -1,0 +1,14 @@
+# Git-sourced deploy variant of Gemfile.plugins.
+#
+# Loaded by OpenProject's Gemfile in the baked image (it globs Gemfile.plugins).
+# Unlike the `path:` variant, the plugin source is NOT in the build context — Bundler
+# CLONES it from git at build time, so your build folder only needs a Dockerfile + this
+# file. Copy this into your build folder AS `Gemfile.plugins` (drop the `.git` suffix).
+#
+# Pin to a TAG (reproducible releases). Change the URL/tag to your repo + release.
+# Private repo? See deploy/DEPLOYMENT.md (build-time credentials).
+group :opf_plugins do
+  gem "openproject-project_groups",
+      git: "https://github.com/neriguidi/openproject-project_groups.git",
+      tag: "v0.1.0"
+end

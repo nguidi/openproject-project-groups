@@ -1,0 +1,40 @@
+# Production (SLIM) image — OpenProject's official multi-stage plugin technique:
+# build the plugin on the FULL image (which has git / node / build tools), then copy
+# the result into the SLIM image (which lacks that toolchain).
+#
+# Build from the repo root, pinning to your stack's version:
+#   docker build -f deploy/Dockerfile.slim --build-arg OPENPROJECT_TAG=17 \
+#                -t openproject-project-groups:17-slim .
+#   # OPENPROJECT_TAG=17.5.1 → builder openproject/openproject:17.5.1,
+#   #                          final   openproject/openproject:17.5.1-slim
+ARG OPENPROJECT_TAG=17
+
+# --- builder: the full image has the toolchain to resolve + install the gem ---
+FROM openproject/openproject:${OPENPROJECT_TAG} AS plugin
+
+# Local (path) plugin: copy the source into the builder at the path used by
+# deploy/Gemfile.plugins (`path: "plugins/openproject-project_groups"`).
+COPY . /app/plugins/openproject-project_groups
+COPY deploy/Gemfile.plugins /app/
+
+# Add the gem to the (frozen) bundle: unfreeze → install → re-freeze.
+RUN bundle config unset deployment && bundle install && bundle config set deployment 'true'
+# No asset precompile: backend-only plugin (no JS/CSS/frontend module).
+
+# --- final: the slim runtime image ---
+FROM openproject/openproject:${OPENPROJECT_TAG}-slim
+
+# The two things adding a path gem changes: the lockfile + the plugin source.
+COPY --chown=$APP_USER:$APP_USER --from=plugin /app/plugins/openproject-project_groups /app/plugins/openproject-project_groups
+COPY --chown=$APP_USER:$APP_USER --from=plugin /app/Gemfile.lock    /app/Gemfile.lock
+COPY --chown=$APP_USER:$APP_USER --from=plugin /app/Gemfile.plugins /app/Gemfile.plugins
+
+# The installed bundle (unchanged for a path gem with no new external deps, but
+# carried over to mirror the official recipe and stay self-consistent).
+COPY --chown=$APP_USER:$APP_USER --from=plugin /app/vendor/bundle /app/vendor/bundle
+COPY --chown=$APP_USER:$APP_USER --from=plugin /usr/local/bundle  /usr/local/bundle
+
+# If you switch to a git-sourced plugin (or one with native gems), also carry git:
+#   COPY --from=plugin /usr/bin/git /usr/bin/git
+# and, for plugins shipping frontend assets, run precompile in the builder and copy
+#   /app/public/assets + /app/config/frontend_assets.manifest.json here.

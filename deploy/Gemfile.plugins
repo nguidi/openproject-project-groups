@@ -1,0 +1,5 @@
+# Loaded by OpenProject's Gemfile in the baked image (it globs Gemfile.plugins).
+# Path is relative to /app, where this file is copied.
+group :opf_plugins do
+  gem "openproject-project_groups", path: "plugins/openproject-project_groups"
+end

@@ -1,0 +1,116 @@
+<% html_title t(:project_module_project_groups) %>
+
+<% content_for :content_header do %>
+  <%= render(Primer::OpenProject::PageHeader.new) do |header|
+        header.with_title { t(:project_module_project_groups) }
+        header.with_description { t("project_groups.page_description") }
+        header.with_breadcrumbs(
+          [{ href: project_overview_path(@project.id), text: @project.name },
+           t(:project_module_project_groups)]
+        )
+      end %>
+<% end %>
+
+<% if @conflicting_groups.any? %>
+  <%= render(Primer::Alpha::Banner.new(scheme: :warning, icon: :alert, mb: 3)) do %>
+    <%= t("project_groups.conflict_warning", groups: @conflicting_groups.map(&:name).join(", ")) %>
+  <% end %>
+<% end %>
+
+<% if @attachable_groups.any? %>
+  <%= render(Primer::Beta::BorderBox.new(mb: 3)) do |box| %>
+    <% box.with_header do |header| %>
+      <% header.with_title(tag: :h2) do %><%= t("project_groups.label_attach_group") %><% end %>
+    <% end %>
+    <% box.with_row do %>
+      <%= form_with url: project_groups_attach_group_path(project_id: @project), method: :post do %>
+        <div class="d-flex flex-items-center" style="gap: .5rem;">
+          <select name="group_id" class="form-control" aria-label="<%= t('project_groups.label_attach_group') %>">
+            <% @attachable_groups.each do |group| %>
+              <option value="<%= group.id %>"><%= group.name %></option>
+            <% end %>
+          </select>
+          <%= render(Primer::Beta::Button.new(scheme: :primary, type: :submit)) do |button|
+                button.with_leading_visual_icon(icon: :plus)
+                t("project_groups.button_attach")
+              end %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<% if @assignments.empty? %>
+  <%= render(Primer::Beta::Blankslate.new(border: true)) do |slate|
+        slate.with_visual_icon(icon: :people)
+        slate.with_heading(tag: :h2) { t("project_groups.no_groups") }
+        slate.with_description { t("project_groups.page_description") }
+      end %>
+<% else %>
+  <% @assignments.each do |assignment| %>
+    <% group = assignment.group %>
+    <% roles = group.project_group_role_set.to_a.sort_by(&:name) %>
+    <%= render(Primer::Beta::BorderBox.new(mb: 3)) do |box| %>
+      <% box.with_header do |header| %>
+        <div class="d-flex flex-items-center flex-justify-between">
+          <div class="d-flex flex-items-center" style="gap: .25rem; flex-wrap: wrap;">
+            <span class="text-bold mr-1"><%= group.name %></span>
+            <% roles.each do |role| %>
+              <%= render(Primer::Beta::Label.new(scheme: :secondary, mr: 1)) { role.name } %>
+            <% end %>
+            <% if roles.empty? %>
+              <%= render(Primer::Beta::Label.new(scheme: :attention, mr: 1)) { t("project_groups.no_roles_short") } %>
+            <% end %>
+          </div>
+          <%= form_with url: project_groups_detach_group_path(project_id: @project, assignment_id: assignment.id),
+                        method: :delete,
+                        data: { turbo_confirm: t("project_groups.confirm_detach") },
+                        class: "d-inline-flex" do %>
+            <%= render(Primer::Beta::Button.new(scheme: :invisible, size: :small, type: :submit)) do |button|
+                  button.with_leading_visual_icon(icon: :trash)
+                  t("project_groups.button_detach")
+                end %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% assignment.memberships.each do |membership| %>
+        <% box.with_row do %>
+          <div class="d-flex flex-items-center flex-justify-between">
+            <span><%= membership.user.name %></span>
+            <%= form_with url: project_groups_remove_member_path(project_id: @project, id: membership.id),
+                          method: :delete, class: "d-inline-flex" do %>
+              <%= render(Primer::Beta::Button.new(scheme: :invisible, size: :small, type: :submit)) do |button|
+                    button.with_leading_visual_icon(icon: :x)
+                    t("project_groups.button_remove")
+                  end %>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+
+      <% if assignment.memberships.empty? %>
+        <% box.with_row do %>
+          <span class="color-fg-muted"><%= t("project_groups.no_members") %></span>
+        <% end %>
+      <% end %>
+
+      <% box.with_row(scheme: :neutral) do %>
+        <%= form_with url: project_groups_add_member_path(project_id: @project), method: :post do %>
+          <input type="hidden" name="assignment_id" value="<%= assignment.id %>">
+          <div class="d-flex flex-items-center" style="gap: .5rem;">
+            <select name="user_id" class="form-control" aria-label="<%= t('project_groups.button_add_member') %>">
+              <% @candidate_users.each do |user| %>
+                <option value="<%= user.id %>"><%= user.name %></option>
+              <% end %>
+            </select>
+            <%= render(Primer::Beta::Button.new(size: :small, type: :submit)) do |button|
+                  button.with_leading_visual_icon(icon: :plus)
+                  t("project_groups.button_add_member")
+                end %>
+          </div>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

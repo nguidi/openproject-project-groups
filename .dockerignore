@@ -1,0 +1,10 @@
+# Build context = the plugin repo root. Keep app/config/db/lib + README/DEVELOPMENT
+# (what the gemspec ships) and deploy/ (for Gemfile.plugins). Drop the rest.
+.git
+.gitignore
+tmp/
+log/
+*.gem
+.bundle/
+spec/
+dev/

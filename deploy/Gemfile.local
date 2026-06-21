@@ -1,0 +1,6 @@
+# Runtime plugin loading for the ALL-IN-ONE OpenProject image.
+# Mount this at /app/Gemfile.local and mount the plugin at the path below; the
+# image's supervisord runs `bundle install` (+ migrate) on startup.
+group :opf_plugins do
+  gem "openproject-project_groups", path: "plugins/openproject-project_groups"
+end

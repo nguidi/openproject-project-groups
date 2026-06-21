@@ -1,0 +1,46 @@
+en:
+  # Project module caption (Project Settings ▸ Modules + project menu)
+  project_module_project_groups: "Groups and Members"
+
+  # Permission captions (Administration ▸ Roles and permissions)
+  permission_view_project_groups: "View groups and members"
+  permission_manage_project_group_members: "Manage group members"
+  # Phase 3:
+  permission_manage_project_group_roles: "Manage group role-sets"
+
+  label_project_groups: "Project groups"
+  label_project_group_roles: "Group role-sets"
+
+  project_groups:
+    page_description: "Add users to a group in this project. They receive the group's roles here only — without affecting other projects."
+    label_attach_group: "Add a group to this project"
+    label_groups_in_project: "Groups in this project"
+    label_roles: "Roles"
+    no_roles_short: "No roles yet"
+    conflict_warning: "Heads up: %{groups} is also added directly to this project (Administration ▸ Groups ▸ Projects), so OpenProject is propagating its members independently of this page. Remove it there to avoid duplicate or conflicting roles."
+    button_attach: "Attach"
+    button_detach: "Detach group"
+    button_remove: "Remove"
+    button_add_member: "Add member"
+    confirm_detach: "Detach this group and remove the roles it grants from its members in this project?"
+    no_groups: "No groups attached to this project yet."
+    no_attachable_groups: "All groups are already attached to this project."
+    no_members: "No members yet."
+    no_roles: "This group has no roles assigned yet (Administration ▸ Groups)."
+    flash:
+      group_attached: "Group attached to the project."
+      group_detached: "Group detached from the project."
+      member_added: "Member added to the group."
+      member_removed: "Member removed from the group."
+    admin:
+      title: "Group role-sets"
+      intro: "Assign the project roles each group grants. When a user is added to a group in a project, they receive these roles in that project."
+      edit_title: "Roles for %{group}"
+      edit_intro: "Select the project roles this group grants. Changes apply immediately to existing members across all projects."
+      col_group: "Group"
+      button_edit: "Edit roles"
+      button_save: "Save"
+      no_groups: "No groups found. Create groups in Administration ▸ Groups."
+      no_roles_available: "No assignable project roles found."
+      flash:
+        saved: "Group role-set saved."

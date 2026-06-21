@@ -1,0 +1,40 @@
+# Production (SLIM) image — plugin fetched from GIT at build time.
+#
+# Unlike Dockerfile.slim (which COPYs the plugin source from the build context), this
+# variant clones the plugin from the git repo declared in Gemfile.plugins, so the build
+# context is JUST this Dockerfile + Gemfile.plugins — no plugin source tree required.
+# Same official multi-stage technique: resolve/install on the FULL image (which has git
+# + build tools), then copy the installed bundle into the SLIM runtime image.
+#
+# Build context = a folder containing this file + a `Gemfile.plugins` (the git variant):
+#   docker build -f Dockerfile --build-arg OPENPROJECT_TAG=17 \
+#                -t openproject-project-groups:17-slim --pull .
+#   # (rename Dockerfile.git-slim -> Dockerfile and Gemfile.plugins.git -> Gemfile.plugins
+#   #  when you drop them into /setup/openproject)
+#
+# Requirements: the build host needs network access to the git repo at build time.
+# The plugin must be pushed to that repo with the referenced tag. Runtime needs no git.
+ARG OPENPROJECT_TAG=17
+
+# --- builder: full image has git to clone the gem + the toolchain to install it ---
+FROM openproject/openproject:${OPENPROJECT_TAG} AS plugin
+
+COPY Gemfile.plugins /app/
+
+# Clone + add the git gem to the (frozen) bundle: unfreeze -> install -> re-freeze.
+# The git checkout lands under vendor/bundle/.../bundler/gems and is carried over below.
+RUN bundle config unset deployment && bundle install && bundle config set deployment 'true'
+# No asset precompile: backend-only plugin (no JS/CSS/frontend module).
+
+# --- final: the slim runtime image ---
+FROM openproject/openproject:${OPENPROJECT_TAG}-slim
+
+# A git gem changes the lockfile (records the git revision) and lands in the bundle.
+COPY --chown=$APP_USER:$APP_USER --from=plugin /app/Gemfile.lock    /app/Gemfile.lock
+COPY --chown=$APP_USER:$APP_USER --from=plugin /app/Gemfile.plugins /app/Gemfile.plugins
+
+# The installed bundle now contains the git-checked-out plugin under
+# vendor/bundle/ruby/<ver>/bundler/gems/openproject-project_groups-<sha>/ — no separate
+# plugins/ COPY is needed (and no git binary is needed at runtime).
+COPY --chown=$APP_USER:$APP_USER --from=plugin /app/vendor/bundle /app/vendor/bundle
+COPY --chown=$APP_USER:$APP_USER --from=plugin /usr/local/bundle  /usr/local/bundle

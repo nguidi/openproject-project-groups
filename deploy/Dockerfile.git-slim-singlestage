@@ -1,0 +1,38 @@
+# Production (SLIM) image — SINGLE-STAGE, plugin cloned from git in place.
+#
+# This is the classic "FROM image -> add plugin -> bundle install -> boot" recipe, the
+# way you'd picture it. It runs directly on the SLIM image, with one wrinkle: slim ships
+# NO git and NO compiler, so we apt-install git just for the build (Bundler shells out to
+# it to clone the git: source), then purge it again so the runtime image stays slim. Our
+# plugin is pure Ruby (depends only on Rails, already present), so git is the only extra
+# build tool needed — no gcc/make.
+#
+# Build context = a folder with this file + a `Gemfile.plugins` (the git variant):
+#   docker build -f Dockerfile --build-arg OPENPROJECT_TAG=17-slim \
+#                -t openproject-project-groups:17-slim --pull .
+#
+# Pass OPENPROJECT_TAG as your EXACT slim tag (e.g. 17-slim or 17.5.1-slim). Runtime
+# needs no git/network; the cloned gem is vendored into the bundle.
+ARG OPENPROJECT_TAG=17-slim
+FROM openproject/openproject:${OPENPROJECT_TAG}
+
+USER root
+
+COPY Gemfile.plugins /app/
+
+# Add the plugin to the (frozen) bundle: install git -> unfreeze -> clone+install the
+# git: gem -> re-freeze -> remove git and apt lists (all in one layer, so git does not
+# bloat the final image).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && bundle config unset deployment \
+ && bundle install \
+ && bundle config set deployment 'true' \
+ && apt-get purge -y git \
+ && apt-get autoremove -y \
+ && rm -rf /var/lib/apt/lists/*
+
+USER $APP_USER
+
+# Pending migrations (core + our four tables) run automatically on container start via
+# the image entrypoint; OpenProject boots normally. No asset precompile (backend-only).

@@ -19,8 +19,29 @@
 # See doc/COPYRIGHT.md and doc/GPL.txt for more details.
 #++
 
-module OpenProject
-  module ProjectGroups
-    VERSION = "0.3.0"
+module ProjectGroups
+  module Groups
+    # Paginated table of the groups attached to a project. Inherits the generic
+    # native table template/markup from ::TableComponent; rows are rendered by the
+    # sibling ::RowComponent (ProjectGroups::Groups::RowComponent). Not sortable —
+    # the controller paginates the collection in a stable order.
+    class TableComponent < ::TableComponent
+      options :project
+
+      columns :name, :roles
+
+      def sortable? = false
+
+      def headers
+        [
+          ["name", { caption: I18n.t("project_groups.column_group") }],
+          ["roles", { caption: I18n.t("project_groups.label_roles") }]
+        ]
+      end
+
+      def empty_row_message
+        I18n.t("project_groups.no_groups")
+      end
+    end
   end
 end

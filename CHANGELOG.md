@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-22
+
+### Changed
+- **UI re-modeled on OpenProject's native Members module**, split into two pages:
+  - **Groups** (`GroupsController#index`) — a paginated table (Name → links to the
+    group's members, Roles, detach action) built on the core `::TableComponent`.
+  - **Members of a group** (`MembershipsController#index`, scoped to an assignment) —
+    a paginated table (Name, Email, remove action). Reached by clicking a group name;
+    breadcrumbs lead back to the groups list.
+- **Add Group / Add Member** use a native `Primer::OpenProject`-styled button that
+  reveals an inline section (autocomplete + Add + Close) via a **CSS-only toggle** —
+  no JavaScript, so it works in a backend-only plugin under OpenProject's CSP.
+- Routes restructured (`project_groups/groups` + nested `…/members`); the project
+  menu and permissions now point at both controllers.
+
 ## [0.2.0] - 2026-06-22
 
 ### Changed
@@ -50,6 +65,7 @@ the group's roles — without the native cross-project propagation.
   patch specs (validations, `Assignment#roles`, `Membership` delegations,
   `table_name_prefix` and FK-cascade wiring).
 
-[Unreleased]: https://github.com/nguidi/openproject-project-groups/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nguidi/openproject-project-groups/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nguidi/openproject-project-groups/releases/tag/v0.1.0

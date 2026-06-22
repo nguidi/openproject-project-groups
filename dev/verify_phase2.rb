@@ -16,7 +16,7 @@ ActiveRecord::Base.transaction do
   # Group role-set (what an admin sets up in Phase 3)
   ProjectGroups::GroupRole.find_or_create_by!(group:, role:)
 
-  # What MembershipsController#attach_group + #create do:
+  # What GroupsController#create (attach group) + MembershipsController#create (add member) do:
   assignment = ProjectGroups::Assignment.find_or_create_by!(group:, project:)
   ProjectGroups::Membership.find_or_create_by!(assignment:, user:)
   ProjectGroups::Reconcile.call(user:, project:)
@@ -25,7 +25,7 @@ ActiveRecord::Base.transaction do
   result[:context]    = { project: project.identifier, group: group.name, user: user.login, role: role.name }
   result[:after_add]  = { native_member: !member.nil?, roles: member&.roles&.map(&:name) }
 
-  # What MembershipsController#destroy does:
+  # What MembershipsController#destroy (remove member) does:
   ProjectGroups::Membership.find_by(assignment:, user:).destroy!
   ProjectGroups::Reconcile.call(user:, project:)
   gone = Member.find_by(user_id: user.id, project_id: project.id, entity_type: nil, entity_id: nil).nil?

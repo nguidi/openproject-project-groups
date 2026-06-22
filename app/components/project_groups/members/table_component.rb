@@ -19,8 +19,28 @@
 # See doc/COPYRIGHT.md and doc/GPL.txt for more details.
 #++
 
-module OpenProject
-  module ProjectGroups
-    VERSION = "0.3.0"
+module ProjectGroups
+  module Members
+    # Paginated table of the users in one group within a project. Inherits the generic
+    # native table template from ::TableComponent; rows rendered by the sibling
+    # ProjectGroups::Members::RowComponent.
+    class TableComponent < ::TableComponent
+      options :project, :assignment
+
+      columns :name, :mail
+
+      def sortable? = false
+
+      def headers
+        [
+          ["name", { caption: User.human_attribute_name(:name) }],
+          ["mail", { caption: User.human_attribute_name(:mail) }]
+        ]
+      end
+
+      def empty_row_message
+        I18n.t("project_groups.no_members")
+      end
+    end
   end
 end

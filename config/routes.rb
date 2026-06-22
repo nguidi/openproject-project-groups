@@ -22,25 +22,31 @@
 # Routes for the "Groups and Members" project page.
 OpenProject::Application.routes.draw do
   scope "projects/:project_id" do
+    # Groups list — the module landing page.
     get    "project_groups",
-           to: "project_groups/memberships#index",
+           to: "project_groups/groups#index",
            as: :project_groups
 
     post   "project_groups/groups",
-           to: "project_groups/memberships#attach_group",
+           to: "project_groups/groups#create",
            as: :project_groups_attach_group
 
-    delete "project_groups/groups/:assignment_id",
-           to: "project_groups/memberships#detach_group",
+    delete "project_groups/groups/:id",
+           to: "project_groups/groups#destroy",
            as: :project_groups_detach_group
 
-    post   "project_groups/members",
-           to: "project_groups/memberships#create",
-           as: :project_groups_add_member
+    # Members of a single group within the project.
+    get    "project_groups/groups/:assignment_id/members",
+           to: "project_groups/memberships#index",
+           as: :project_group_members
 
-    delete "project_groups/members/:id",
+    post   "project_groups/groups/:assignment_id/members",
+           to: "project_groups/memberships#create",
+           as: :project_group_add_member
+
+    delete "project_groups/groups/:assignment_id/members/:id",
            to: "project_groups/memberships#destroy",
-           as: :project_groups_remove_member
+           as: :project_group_remove_member
   end
 
   # Global admin: define each group's role-set.

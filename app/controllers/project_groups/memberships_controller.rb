@@ -20,81 +20,52 @@
 #++
 
 module ProjectGroups
-  # The "Groups and Members" project page: attach/detach global groups to this
-  # project and add/remove users in them. Every mutation reconciles the affected
-  # user(s) into native project members (ProjectGroups::Reconcile).
+  # The members of ONE group within the project: a paginated list (Name, Email, remove
+  # action) scoped to an assignment, plus add. Each mutation reconciles the affected
+  # user into native project members (ProjectGroups::Reconcile).
   class MembershipsController < ApplicationController
     before_action :find_project_by_project_id
     before_action :authorize
+    before_action :find_assignment
 
     menu_item :project_groups
 
     def index
-      @assignments = Assignment
-                     .where(project: @project)
-                     .includes(:group, { group: :project_group_roles }, memberships: :user)
-                     .to_a
-      attached_group_ids = @assignments.map(&:group_id)
-      @attachable_groups = Group.where.not(id: attached_group_ids).order(:lastname)
-      @conflicting_groups = conflicting_native_group_members
+      @members = @assignment.memberships
+                            .includes(:user)
+                            .order(:id)
+                            .paginate(page: params[:page], per_page: per_page)
     end
 
-    def attach_group
-      group = Group.find(params[:group_id])
-      Assignment.find_or_create_by!(group:, project: @project)
-      flash[:notice] = t("project_groups.flash.group_attached")
-      redirect_to project_groups_path(project_id: @project), status: :see_other
-    end
-
-    def detach_group
-      assignment = project_assignments.find(params[:assignment_id])
-      users = assignment.memberships.map(&:user)
-      assignment.destroy! # cascades the memberships
-      reconcile(users)
-      flash[:notice] = t("project_groups.flash.group_detached")
-      redirect_to project_groups_path(project_id: @project), status: :see_other
-    end
-
-    def create # add a member to a group
-      assignment = project_assignments.find(params[:assignment_id])
+    def create # add a member to the group
       user = User.find(params[:user_id])
-      Membership.find_or_create_by!(assignment:, user:)
-      reconcile([user])
+      Membership.find_or_create_by!(assignment: @assignment, user:)
+      Reconcile.call(user:, project: @project)
       flash[:notice] = t("project_groups.flash.member_added")
-      redirect_to project_groups_path(project_id: @project), status: :see_other
+      redirect_to members_path, status: :see_other
     end
 
-    def destroy # remove a member from a group
-      membership = Membership
-                   .joins(:assignment)
-                   .where(project_groups_assignments: { project_id: @project.id })
-                   .find(params[:id])
+    def destroy # remove a member from the group
+      membership = @assignment.memberships.find(params[:id])
       user = membership.user
       membership.destroy!
-      reconcile([user])
+      Reconcile.call(user:, project: @project)
       flash[:notice] = t("project_groups.flash.member_removed")
-      redirect_to project_groups_path(project_id: @project), status: :see_other
+      redirect_to members_path, status: :see_other
     end
 
     private
 
-    def project_assignments
-      Assignment.where(project: @project)
+    def find_assignment
+      @assignment = Assignment.where(project: @project).find(params[:assignment_id])
     end
 
-    # Groups attached here that are ALSO native members of the project (someone added
-    # them via Administration ▸ Groups ▸ Projects) — core then propagates their members
-    # independently of us. Surfaced as a warning (README §9 operator caveat). Conflict
-    # detection is defined once, as Assignment.conflicting_with_native_membership.
-    def conflicting_native_group_members
-      Assignment.where(project: @project)
-                .conflicting_with_native_membership
-                .includes(:group)
-                .map(&:group)
+    def members_path
+      project_group_members_path(project_id: @project, assignment_id: @assignment)
     end
 
-    def reconcile(users)
-      users.uniq.each { |user| Reconcile.call(user:, project: @project) }
+    def per_page
+      params[:per_page].presence || 25
     end
   end
 end

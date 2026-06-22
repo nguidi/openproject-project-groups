@@ -258,7 +258,10 @@ ProjectGroups/
 │   ├── controllers/
 │   │   └── project_groups/
 │   │       ├── admin/group_roles_controller.rb   # define each group's role-set
-│   │       └── memberships_controller.rb         # add/remove members within a project
+│   │       ├── groups_controller.rb              # groups list + attach/detach (landing page)
+│   │       └── memberships_controller.rb         # members of one group + add/remove
+│   ├── components/
+│   │   └── project_groups/                       # Groups/Members table + row ViewComponents
 │   ├── views/                        # server-rendered Primer ViewComponents (ERB), no SPA
 │   └── workers/
 │       └── project_groups/reconcile_job.rb
@@ -271,9 +274,9 @@ ProjectGroups/
 └── spec/                             # RSpec — mirrors app/ (services, models, workers, patch)
 ```
 
-> Note: the `Group` patch lives under `lib/.../patches/` (not `app/patches/`), and the
-> UI is plain Primer ViewComponents inside ERB views — there is no `app/components/`
-> directory and no Angular/SPA code.
+> Note: the `Group` patch lives under `lib/.../patches/` (not `app/patches/`). The UI is
+> plain Primer ViewComponents + ERB — `app/components/` holds the Groups/Members table +
+> row components (modeled on OpenProject's native `::TableComponent`); no Angular/SPA code.
 
 Engine responsibilities (`engine.rb`):
 - `register 'openproject-project_groups'` with the Op plugin DSL.
@@ -297,24 +300,40 @@ surface area and no frontend build coupling for an MVP.
 
 ## 6. UI surfaces
 
-**Primary — "Groups and Members" project page** (project-first; our own project
-module, enabled per project):
+**Primary — two project pages** (project-first; our own project module, enabled per
+project), modeled on OpenProject's native Members module (v0.3.0):
+
+*Groups list* (the landing page) — a paginated table of the groups attached here:
 
 ```
-Project ▸ Groups and Members
-────────────────────────────────────────
-Group            Roles (from role-set)   Members
-Reviewers        Reviewer                3   [+ add member]
-Auditors         Reader                  1   [+ add member]
-PhD Supervisors  Project admin           2   [+ add member]
-
-[+ add a group to this project]
+Project ▸ Groups and Members                          [ + Add group ]
+─────────────────────────────────────────────────────────────────────
+Group            Roles (from role-set)                 Actions
+Reviewers        Reviewer                              🗑
+Auditors         Reader                                🗑
+PhD Supervisors  Project admin                         🗑
 ```
 
-- Attach an existing (native) group to the project (creates an `assignment`).
-- Add a user to a group → creates a project-scoped `membership` → reconcile writes a
-  direct member with the group's roles. Removing reverses it.
-- Show each user's effective roles with provenance (which group granted what).
+- **Add group** reveals an inline group autocomplete → Attach creates an `assignment`.
+- Clicking a **group name** opens that group's members page.
+- Detach removes the assignment (and reconciles the affected users).
+
+*Members of a group* — a paginated table of the users in one group:
+
+```
+Reviewers ▸ Members                                   [ + Add member ]
+─────────────────────────────────────────────────────────────────────
+Name             Email                                 Actions
+Maria Rossi      maria@example.org                     🗑
+```
+
+- **Add member** reveals an inline user autocomplete → creates a project-scoped
+  `membership` → reconcile writes a direct native member with the group's roles.
+  Removing reverses it.
+
+Both pages reuse the native `Primer::OpenProject` page header/breadcrumbs, the core
+paginated `::TableComponent`, `opce-user-autocompleter`, and `Primer::Alpha::Dialog`
+confirmations. The "Add" reveal is a **CSS-only toggle** — no JS, no frontend build.
 
 **Per-project toggle (native Members vs ours):** "Groups and Members" is a project
 module. In **Project Settings ▸ Modules** an admin enables it; while enabled we hide

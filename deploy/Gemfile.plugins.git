@@ -10,5 +10,5 @@
 group :opf_plugins do
   gem "openproject-project_groups",
       git: "https://github.com/nguidi/openproject-project-groups.git",
-      tag: "v0.2.0"
+      tag: "v0.3.0"
 end

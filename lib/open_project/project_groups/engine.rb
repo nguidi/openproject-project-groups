@@ -43,11 +43,13 @@ module OpenProject
         # native Members page).
         project_module :project_groups do
           permission :view_project_groups,
-                     { "project_groups/memberships" => %i[index] },
+                     { "project_groups/groups" => %i[index],
+                       "project_groups/memberships" => %i[index] },
                      permissible_on: :project
 
           permission :manage_project_group_members,
-                     { "project_groups/memberships" => %i[index create destroy attach_group detach_group] },
+                     { "project_groups/groups" => %i[index create destroy],
+                       "project_groups/memberships" => %i[index create destroy] },
                      permissible_on: :project
         end
 
@@ -60,7 +62,7 @@ module OpenProject
         # calling Redmine::MenuManager at class-load time fails for an external plugin.
         menu :project_menu,
              :project_groups,
-             { controller: "/project_groups/memberships", action: "index" },
+             { controller: "/project_groups/groups", action: "index" },
              caption: :project_module_project_groups,
              param: :project_id,
              after: :members,

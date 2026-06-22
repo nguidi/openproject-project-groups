@@ -1,18 +1,23 @@
-<% html_title @assignment.group.name %>
+<% html_title t(:project_module_project_groups) %>
 
 <% content_for :content_header do %>
   <%= render(Primer::OpenProject::PageHeader.new) do |header|
-        header.with_title { @assignment.group.name }
-        header.with_description { t("project_groups.label_members_title", group: @assignment.group.name) }
+        header.with_title { t(:project_module_project_groups) }
+        header.with_description { t("project_groups.page_description") }
         header.with_breadcrumbs(
           [{ href: project_overview_path(@project.id), text: @project.name },
-           { href: project_groups_path(project_id: @project), text: t(:project_module_project_groups) },
-           @assignment.group.name]
+           t(:project_module_project_groups)]
         )
       end %>
 <% end %>
 
-<%# CSS-only reveal: the checkbox toggles the add section and hides the "Add member"
+<% if @conflicting_groups.any? %>
+  <%= render(Primer::Alpha::Banner.new(scheme: :warning, icon: :alert, mb: 3)) do %>
+    <%= t("project_groups.conflict_warning", groups: @conflicting_groups.map(&:name).join(", ")) %>
+  <% end %>
+<% end %>
+
+<%# CSS-only reveal: the checkbox toggles the add section and hides the "Add group"
     trigger while open (no JS — opce frontend has no plugin build hook). %>
 <style>
   .pg-add-section { display: none; }
@@ -26,7 +31,7 @@
   <label for="pg-add-toggle" class="pg-add-trigger Button Button--primary Button--medium">
     <span class="Button-content">
       <span class="Button-visual Button-leadingVisual"><%= render(Primer::Beta::Octicon.new(icon: :plus)) %></span>
-      <span class="Button-label"><%= t("project_groups.button_add_member") %></span>
+      <span class="Button-label"><%= t("project_groups.button_add_group") %></span>
     </span>
   </label>
 </div>
@@ -34,25 +39,22 @@
 <div class="pg-add-section mb-3">
   <%= render(Primer::Beta::BorderBox.new) do |box| %>
     <% box.with_row do %>
-      <%= form_with url: project_group_add_member_path(project_id: @project, assignment_id: @assignment), method: :post do %>
+      <%= form_with url: project_groups_attach_group_path(project_id: @project), method: :post do %>
         <div class="d-flex flex-items-center" style="gap: .5rem;">
           <div class="flex-auto">
             <%= angular_component_tag "opce-user-autocompleter",
                   inputs: {
-                    inputName: "user_id",
+                    inputName: "group_id",
                     inputBindValue: "id",
                     resource: "principals",
                     url: ::API::V3::Utilities::PathHelper::ApiV3Path.principals,
                     searchKey: "any_name_attribute",
                     multiple: false,
-                    placeholder: t("project_groups.label_add_member_search"),
-                    filters: [
-                      { name: "type", operator: "=", values: %w[User] },
-                      { name: "status", operator: "=", values: [Principal.statuses[:active]] }
-                    ]
+                    placeholder: t("project_groups.label_add_group_search"),
+                    filters: [{ name: "type", operator: "=", values: %w[Group] }]
                   } %>
           </div>
-          <%= render(Primer::Beta::Button.new(scheme: :primary, type: :submit)) { t("project_groups.button_add_member") } %>
+          <%= render(Primer::Beta::Button.new(scheme: :primary, type: :submit)) { t("project_groups.button_attach") } %>
           <label for="pg-add-toggle" class="Button Button--medium">
             <span class="Button-content"><span class="Button-label"><%= t(:button_cancel) %></span></span>
           </label>
@@ -62,20 +64,20 @@
   <% end %>
 </div>
 
-<%= render(ProjectGroups::Members::TableComponent.new(rows: @members, project: @project, assignment: @assignment)) %>
+<%= render(ProjectGroups::Groups::TableComponent.new(rows: @groups, project: @project)) %>
 
 <%# Confirmation dialogs, one per row, opened by the row's trash button via show_dialog_id. %>
-<% @members.each do |membership| %>
-  <%= render(Primer::Alpha::Dialog.new(id: "pg-remove-#{membership.id}",
-                                       title: t("project_groups.dialog.remove_title"),
+<% @groups.each do |assignment| %>
+  <%= render(Primer::Alpha::Dialog.new(id: "pg-detach-#{assignment.id}",
+                                       title: t("project_groups.dialog.detach_title"),
                                        size: :medium)) do |dialog| %>
     <% dialog.with_header(variant: :large) %>
-    <% dialog.with_body do %><%= t("project_groups.confirm_remove_member") %><% end %>
+    <% dialog.with_body do %><%= t("project_groups.confirm_detach") %><% end %>
     <% dialog.with_footer do %>
-      <%= render(Primer::Beta::Button.new(data: { close_dialog_id: "pg-remove-#{membership.id}" })) { t(:button_cancel) } %>
+      <%= render(Primer::Beta::Button.new(data: { close_dialog_id: "pg-detach-#{assignment.id}" })) { t(:button_cancel) } %>
       <%= render(Primer::Beta::Button.new(scheme: :danger, tag: :a,
-                                          href: project_group_remove_member_path(project_id: @project, assignment_id: @assignment, id: membership.id),
-                                          data: { turbo_method: :delete })) { t("project_groups.button_remove") } %>
+                                          href: project_groups_detach_group_path(project_id: @project, id: assignment.id),
+                                          data: { turbo_method: :delete })) { t("project_groups.button_detach") } %>
     <% end %>
   <% end %>
 <% end %>

@@ -6,6 +6,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-22
+
+### Changed
+- **Reworked the "Project roles" tab into a two-column add/remove UI** (replacing the
+  checkbox-set + Save form): the left column lists the group's **current roles** (each
+  with a Remove button) and the right lists the **available roles**, filtered to exclude
+  those already in the group (each with an Add button). **Both columns are independently
+  paginated** (10/page, with distinct page params so they don't interfere). Add/remove
+  act on a single role via new `GroupRolesController#add_role` / `#remove_role` actions,
+  which recompute the set and hand it to `SetGroupRoleSet` (so member reconciliation
+  still runs); the `update` action/route was replaced by these member routes.
+
+## [0.4.1] - 2026-06-22
+
+### Removed
+- The standalone **"Group role-sets" admin screen and its sidebar entry**
+  (Administration ▸ Users & Permissions) — redundant now that role-sets are edited on
+  the **"Project roles" tab** of the native Group page (v0.4.0). The `index`/`edit`
+  actions, their views, the `admin_menu` registration, and the unused
+  `label_project_group_roles` string were removed; only `GroupRolesController#update`
+  remains (the tab posts to it), now redirecting back to the tab.
+
+## [0.4.0] - 2026-06-22
+
+### Added
+- **"Project roles" tab on the native Group page** (Administration ▸ Groups ▸ <group>).
+  The group's role-set is now editable inline, alongside General / Users / Projects /
+  Global roles / Synchronized groups — the same extension point the LDAP module uses
+  (`GroupsHelper#group_settings_tabs`, prepended from the engine). Saves through the
+  existing `ProjectGroups::Admin::GroupRolesController#update` and returns to the tab
+  (via a validated `back_url`). The standalone admin role-set screen remains.
+
 ## [0.3.1] - 2026-06-22
 
 ### Fixed
@@ -77,7 +109,10 @@ the group's roles — without the native cross-project propagation.
   patch specs (validations, `Assignment#roles`, `Membership` delegations,
   `table_name_prefix` and FK-cascade wiring).
 
-[Unreleased]: https://github.com/nguidi/openproject-project-groups/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/nguidi/openproject-project-groups/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/nguidi/openproject-project-groups/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/nguidi/openproject-project-groups/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/nguidi/openproject-project-groups/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.1.0...v0.2.0

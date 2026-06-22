@@ -257,7 +257,7 @@ ProjectGroups/
 │   │       └── set_group_role_set.rb  # admin role-set save + async fan-out
 │   ├── controllers/
 │   │   └── project_groups/
-│   │       ├── admin/group_roles_controller.rb   # define each group's role-set
+│   │       ├── admin/group_roles_controller.rb   # role-set update endpoint (Group page tab posts here)
 │   │       ├── groups_controller.rb              # groups list + attach/detach (landing page)
 │   │       └── memberships_controller.rb         # members of one group + add/remove
 │   ├── components/
@@ -340,9 +340,14 @@ module. In **Project Settings ▸ Modules** an admin enables it; while enabled w
 (and optionally guard) the native *Members* page so there's a single way in. Disable
 it and the native *Members* page returns. Exclusive by design — you pick one.
 
-**Secondary — admin screen** (global): define/edit each group's **role-set** (pick
-project roles). Group *creation/naming* stays in OpenProject's native **Admin ▸
-Groups** — we only attach the role-set and never create groups or roles ourselves.
+**Secondary — role-set editing** (global, admin): define/edit each group's **role-set**
+(pick project roles) on a **"Project roles" tab on the native Group page**
+(Administration ▸ Groups ▸ <group>), alongside Users / Projects / Global roles /
+Synchronized groups — added via the same `GroupsHelper#group_settings_tabs` extension
+point the LDAP module uses (v0.4.0). Group *creation/naming* stays in OpenProject's
+native **Admin ▸ Groups** — we only attach the role-set and never create groups or roles
+ourselves. (The earlier standalone admin screen + its sidebar entry were removed in
+v0.4.1 in favor of the tab; only the `update` endpoint remains, which the tab posts to.)
 
 ## 7. Development plan (phased)
 

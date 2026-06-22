@@ -1,0 +1,87 @@
+<%# "Project roles" tab on the native Group edit page (Administration ▸ Groups ▸ <group>).
+    Injected via GroupsHelper#group_settings_tabs (patched by this plugin). @group is set
+    by the core GroupsController#edit. Two columns, each independently paginated: the
+    group's CURRENT roles (left, removable) and the AVAILABLE roles (right, addable —
+    already-added roles are filtered out). Each add/remove posts to
+    ProjectGroups::Admin::GroupRolesController and returns to this tab (preserving both
+    columns' page). %>
+<% current_role_ids = @group.project_group_roles.pluck(:role_id) %>
+<% current_roles = @group.project_group_role_set.order(:name).paginate(page: params[:current_page], per_page: 10) %>
+<% available_roles = Role.where(builtin: Role::NON_BUILTIN)
+                        .where.not(id: current_role_ids)
+                        .order(:name)
+                        .paginate(page: params[:available_page], per_page: 10) %>
+<% back = edit_group_path(@group, tab: :project_group_roles,
+                          current_page: params[:current_page], available_page: params[:available_page]) %>
+
+<p class="color-fg-muted"><%= t("project_groups.admin.edit_intro") %></p>
+
+<div class="d-flex" style="gap: 1.5rem; align-items: flex-start;">
+  <%# LEFT — current roles (removable, paginated) %>
+  <div style="flex: 1 1 0; min-width: 0;">
+    <%= render(Primer::Beta::BorderBox.new) do |box| %>
+      <% box.with_header do |header| %>
+        <% header.with_title(tag: :h3) do %><%= t("project_groups.roles_current") %><% end %>
+      <% end %>
+
+      <% if current_roles.empty? %>
+        <% box.with_row do %>
+          <span class="color-fg-muted"><%= t("project_groups.no_roles_short") %></span>
+        <% end %>
+      <% else %>
+        <% current_roles.each do |role| %>
+          <% box.with_row do %>
+            <div class="d-flex flex-items-center flex-justify-between">
+              <span><%= role.name %></span>
+              <%= form_with url: remove_role_project_groups_admin_group_role_path(@group),
+                            method: :delete, data: { turbo: false } do %>
+                <input type="hidden" name="role_id" value="<%= role.id %>">
+                <input type="hidden" name="back_url" value="<%= back %>">
+                <%= render(Primer::Beta::Button.new(scheme: :invisible, size: :small, type: :submit)) do |button|
+                      button.with_leading_visual_icon(icon: :trash)
+                      t("project_groups.button_remove")
+                    end %>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+    <%= render "groups/pg_role_pager", collection: current_roles, param: :current_page,
+                                       other: { available_page: params[:available_page] } %>
+  </div>
+
+  <%# RIGHT — available roles (addable, paginated) %>
+  <div style="flex: 1 1 0; min-width: 0;">
+    <%= render(Primer::Beta::BorderBox.new) do |box| %>
+      <% box.with_header do |header| %>
+        <% header.with_title(tag: :h3) do %><%= t("project_groups.roles_available") %><% end %>
+      <% end %>
+
+      <% if available_roles.empty? %>
+        <% box.with_row do %>
+          <span class="color-fg-muted"><%= t("project_groups.roles_all_added") %></span>
+        <% end %>
+      <% else %>
+        <% available_roles.each do |role| %>
+          <% box.with_row do %>
+            <div class="d-flex flex-items-center flex-justify-between">
+              <span><%= role.name %></span>
+              <%= form_with url: add_role_project_groups_admin_group_role_path(@group),
+                            method: :post, data: { turbo: false } do %>
+                <input type="hidden" name="role_id" value="<%= role.id %>">
+                <input type="hidden" name="back_url" value="<%= back %>">
+                <%= render(Primer::Beta::Button.new(scheme: :primary, size: :small, type: :submit)) do |button|
+                      button.with_leading_visual_icon(icon: :plus)
+                      t("project_groups.button_add_role")
+                    end %>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+    <%= render "groups/pg_role_pager", collection: available_roles, param: :available_page,
+                                       other: { current_page: params[:current_page] } %>
+  </div>
+</div>

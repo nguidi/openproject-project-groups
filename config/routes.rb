@@ -49,10 +49,16 @@ OpenProject::Application.routes.draw do
            as: :project_group_remove_member
   end
 
-  # Global admin: define each group's role-set.
+  # Add/remove a single role to/from a group's role-set — the UI is the "Project roles"
+  # tab on the native Group page.
   namespace :project_groups do
     namespace :admin do
-      resources :group_roles, only: %i[index edit update]
+      resources :group_roles, only: [] do
+        member do
+          post   :add_role
+          delete :remove_role
+        end
+      end
     end
   end
 end

@@ -1,0 +1,29 @@
+<%# Minimal independent pager for one roles column. Two paginators live on the same
+    Group-edit page, so each must use its own page param (OpenProject's
+    pagination_links_full only knows :page). Locals:
+      collection — a will_paginate collection
+      param      — this column's page param (e.g. :current_page)
+      other      — params to preserve in the links (e.g. { available_page: params[:available_page] }) %>
+<% if collection.total_pages > 1 %>
+  <div class="d-flex flex-items-center mt-2" style="gap: .5rem;">
+    <% if collection.previous_page %>
+      <%= render(Primer::Beta::Button.new(
+            tag: :a, size: :small, scheme: :invisible,
+            href: edit_group_path(@group, other.merge(tab: :project_group_roles, param => collection.previous_page)))) do |button|
+            button.with_leading_visual_icon(icon: :chevron_left)
+            t("project_groups.pager_previous")
+          end %>
+    <% end %>
+
+    <span class="color-fg-muted"><%= collection.current_page %> / <%= collection.total_pages %></span>
+
+    <% if collection.next_page %>
+      <%= render(Primer::Beta::Button.new(
+            tag: :a, size: :small, scheme: :invisible,
+            href: edit_group_path(@group, other.merge(tab: :project_group_roles, param => collection.next_page)))) do |button|
+            button.with_trailing_visual_icon(icon: :chevron_right)
+            t("project_groups.pager_next")
+          end %>
+    <% end %>
+  </div>
+<% end %>

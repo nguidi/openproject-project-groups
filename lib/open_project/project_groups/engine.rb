@@ -20,6 +20,7 @@
 #++
 
 require "open_project/plugins"
+require_relative "patches/groups_helper_patch"
 
 module OpenProject
   module ProjectGroups
@@ -74,6 +75,13 @@ module OpenProject
       # Looks up OpenProject::ProjectGroups::Patches::GroupPatch.
       patches %i[Group]
 
+      # Add a "Project roles" tab (the group's role-set) to the native Group edit page,
+      # exactly how the LDAP module adds "Synchronized groups" — by extending
+      # GroupsHelper#group_settings_tabs. Re-applied on each code reload via to_prepare.
+      config.to_prepare do
+        ::GroupsHelper.prepend(OpenProject::ProjectGroups::Patches::GroupsHelperPatch)
+      end
+
       # Per-project toggle (README §2): hide the native "Members" project menu item
       # on projects where our module is enabled, so there's a single way in. Uses the
       # MenuManager's add_condition (ANDed with any existing condition) rather than
@@ -89,15 +97,6 @@ module OpenProject
             :members,
             ->(project) { project.blank? || !project.module_enabled?(:project_groups) }
           )
-        end
-
-        # Admin entry for the group role-set screen (Phase 3), under Users & Permissions.
-        ::Redmine::MenuManager.map(:admin_menu) do |menu|
-          menu.push :project_group_roles,
-                    { controller: "/project_groups/admin/group_roles", action: :index },
-                    parent: :users_and_permissions,
-                    caption: :label_project_group_roles,
-                    if: ->(*) { User.current.admin? }
         end
       end
     end

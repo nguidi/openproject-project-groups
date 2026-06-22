@@ -21,41 +21,48 @@
 
 module ProjectGroups
   module Admin
-    # Global admin screen to define each (native) group's role-set — the project
-    # roles a group grants. Admin-only for now (a global `manage_project_group_roles`
-    # permission could replace require_admin later, README §9.3).
+    # Add/remove a single role to/from a (native) group's role-set. The UI is the
+    # "Project roles" tab on the native Group page (app/views/groups/_project_group_roles.html.erb).
+    # Admin-only. Both actions recompute the set and hand it to SetGroupRoleSet, which
+    # diffs it and reconciles the affected members.
     class GroupRolesController < ApplicationController
-      layout "admin"
-
       before_action :require_admin
-      before_action :find_group, only: %i[edit update]
+      before_action :find_group
 
-      menu_item :project_group_roles
-
-      def index
-        @groups = Group.not_organizational_units.order(:lastname)
+      def add_role
+        apply_role_set(current_role_ids + [param_role_id])
       end
 
-      def edit
-        @selectable_roles = selectable_roles
-        @selected_role_ids = @group.project_group_roles.pluck(:role_id)
-      end
-
-      def update
-        ProjectGroups::SetGroupRoleSet.call(group: @group, role_ids: params[:role_ids])
-        flash[:notice] = t("project_groups.admin.flash.saved")
-        redirect_to project_groups_admin_group_roles_path, status: :see_other
+      def remove_role
+        apply_role_set(current_role_ids - [param_role_id])
       end
 
       private
+
+      def apply_role_set(role_ids)
+        ProjectGroups::SetGroupRoleSet.call(group: @group, role_ids: role_ids.uniq)
+        flash[:notice] = t("project_groups.admin.flash.saved")
+        redirect_to(safe_back_url || edit_group_path(@group, tab: :project_group_roles), status: :see_other)
+      end
+
+      def current_role_ids
+        @group.project_group_roles.pluck(:role_id)
+      end
+
+      def param_role_id
+        params[:role_id].to_i
+      end
 
       def find_group
         @group = Group.find(params[:id])
       end
 
-      # Only roles valid for a project member (what reconciliation will accept).
-      def selectable_roles
-        Role.all.select(&:member?).sort_by(&:name)
+      # Only accept a local relative path, to avoid an open-redirect via back_url.
+      def safe_back_url
+        url = params[:back_url].to_s
+        return if url.blank? || !url.start_with?("/") || url.start_with?("//", '/\\')
+
+        url
       end
     end
   end

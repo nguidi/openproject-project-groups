@@ -36,7 +36,6 @@ module ProjectGroups
                      .to_a
       attached_group_ids = @assignments.map(&:group_id)
       @attachable_groups = Group.where.not(id: attached_group_ids).order(:lastname)
-      @candidate_users = User.not_locked.order(:lastname, :firstname)
       @conflicting_groups = conflicting_native_group_members
     end
 

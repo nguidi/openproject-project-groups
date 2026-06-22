@@ -463,13 +463,13 @@ Remaining polish: a per-user **provenance** summary, and a richer member picker
       so the prod Dockerfile is minimal.
 - [x] Upgrade / rollback / version-pinning notes (DEPLOYMENT.md §5–§6).
 - [x] **Built & runtime-smoke-tested** the **slim** artifact
-      `openproject-project-groups:17-slim` (the compose/Helm deploy image) via the
+      `openproject-whisperer:17-slim` (the compose/Helm deploy image) via the
       official multi-stage build (`deploy/Dockerfile.slim`). `deploy/smoke-test.yml`
       boots it in **production mode** against a throwaway Postgres → schema builds, all
       4 plugin migrations run, and `SMOKE_RESULT ok=true` (module registered, 4 tables
       present, permissions live). The smoke harness is image-aware (slim has no
       `db/structure.sql`, so it migrates from scratch); the single-stage all-in-one
-      `openproject-project-groups:17` is also verified. Re-run pinned to your exact
+      `openproject-whisperer:17` is also verified. Re-run pinned to your exact
       patch tag before going live.
 
 ## 8. Development environment, build & deploy
@@ -548,7 +548,7 @@ Option A as a ready-to-use kit in **`deploy/`** (slim production = official mult
 ```bash
 # from the repo root, pin OPENPROJECT_TAG to your version (without -slim):
 OPENPROJECT_TAG=17 ./deploy/build.sh
-# → builds  openproject-project-groups:17-slim  (via deploy/Dockerfile.slim)
+# → builds  openproject-whisperer:17-slim  (via deploy/Dockerfile.slim)
 ```
 
 `deploy/Dockerfile.slim` follows OpenProject's **multi-stage** technique: it builds the
@@ -559,7 +559,7 @@ backend-only (no JS/CSS), so the slim image's own assets suffice. (`deploy/Docke
 is a single-stage variant for a quick all-in-one eval.)
 
 Then point **every** OpenProject service (`web`, `worker`, `seeder`) in the stack's
-`docker-compose.yml` at `openproject-project-groups:<tag>-slim` instead of the stock
+`docker-compose.yml` at `openproject-whisperer:<tag>-slim` instead of the stock
 image and `docker compose up -d`. Pending migrations (core + our four tables) run on
 boot. Run `rake project_groups:reconcile_all` once after first deploy; `rake
 project_groups:check` reports core-propagation conflicts.

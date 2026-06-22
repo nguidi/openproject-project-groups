@@ -45,7 +45,7 @@ compose so the result is a drop-in replacement. Set `OPENPROJECT_TAG` accordingl
 - All-in-one: `17` or `17.5.1`.
 
 ```bash
-OPENPROJECT_TAG=17-slim ./deploy/build.sh   # → openproject-project-groups:17-slim
+OPENPROJECT_TAG=17-slim ./deploy/build.sh   # → openproject-whisperer:17-slim
 ```
 
 > Backend-only plugin → no asset precompile, no Node build. The Dockerfile is
@@ -66,10 +66,10 @@ From the **plugin repo root**. Set `OPENPROJECT_TAG` to your stack's version **w
 *slim* image (`…-slim`):
 
 ```bash
-OPENPROJECT_TAG=17 ./deploy/build.sh        # → openproject-project-groups:17-slim
+OPENPROJECT_TAG=17 ./deploy/build.sh        # → openproject-whisperer:17-slim
 # or directly:
 docker build -f deploy/Dockerfile.slim --build-arg OPENPROJECT_TAG=17 \
-             -t openproject-project-groups:17-slim --pull .
+             -t openproject-whisperer:17-slim --pull .
 ```
 
 It builds the plugin on `openproject/openproject:17` (which has git/node/build tools, so
@@ -78,7 +78,7 @@ It builds the plugin on `openproject/openproject:17` (which has git/node/build t
 why the full image is used as a builder (OpenProject's official multi-stage technique).
 
 > Quick all-in-one eval instead (single image, embedded DB):
-> `docker build -f deploy/Dockerfile --build-arg OPENPROJECT_TAG=17 -t openproject-project-groups:17 --pull .`
+> `docker build -f deploy/Dockerfile --build-arg OPENPROJECT_TAG=17 -t openproject-whisperer:17 --pull .`
 
 ### Verify the build (runtime smoke test)
 
@@ -87,13 +87,13 @@ schema, runs the plugin's migrations, and asserts the module/tables/permissions 
 wired up:
 
 ```bash
-SMOKE_IMAGE=openproject-project-groups:17-slim \
+SMOKE_IMAGE=openproject-whisperer:17-slim \
   docker compose -f deploy/smoke-test.yml up --abort-on-container-exit --exit-code-from smoke-app
 docker compose -f deploy/smoke-test.yml down -v   # cleanup
 ```
 
 Pass = `SMOKE_RESULT ok=true …` and exit code 0. (Defaults to the all-in-one
-`openproject-project-groups:17`; override with `SMOKE_IMAGE` as above.)
+`openproject-whisperer:17`; override with `SMOKE_IMAGE` as above.)
 
 > The harness is image-aware: the all-in-one image ships `db/structure.sql` (loaded
 > directly), while the **slim** image omits it on purpose, so the schema is built from
@@ -128,7 +128,7 @@ code. The git variant just changes *where the code comes from* (a clone, fetched
 # 1) one-time: publish the plugin to git with a release tag
 cd ProjectGroups
 git init && git add -A && git commit -m "Release v0.1.0"
-git remote add origin https://github.com/<you>/openproject-project_groups.git
+git remote add origin https://github.com/nguidi/openproject-project-groups.git
 git push -u origin main
 git tag v0.1.0 && git push --tags
 
@@ -142,7 +142,7 @@ cp deploy/Gemfile.plugins.git   /setup/openproject/Gemfile.plugins
 # 3) build (context = that folder; no plugin source in it)
 cd /setup/openproject
 docker build -f Dockerfile --build-arg OPENPROJECT_TAG=17 \
-             -t openproject-project-groups:17-slim --pull .
+             -t openproject-whisperer:17-slim --pull .
 ```
 
 **Two flavors** (the slim image ships no `git`/compiler, so a fresh clone needs git from
@@ -158,7 +158,7 @@ somewhere):
   pass your **exact slim tag**, `--build-arg OPENPROJECT_TAG=17-slim`. Functionally
   identical result.
 
-Verify it with the same smoke test (`SMOKE_IMAGE=openproject-project-groups:17-slim …`,
+Verify it with the same smoke test (`SMOKE_IMAGE=openproject-whisperer:17-slim …`,
 §2), then use it in your stack exactly as below. To release a new plugin version, push a
 new tag, bump `tag:` in `Gemfile.plugins`, and rebuild.
 
@@ -173,13 +173,13 @@ of `openproject/openproject:17-slim`:
 ```yaml
 services:
   web:
-    image: openproject-project-groups:17-slim   # was: openproject/openproject:17-slim
+    image: openproject-whisperer:17-slim   # was: openproject/openproject:17-slim
     # ...unchanged: env, volumes, depends_on (db, cache, nextcloud), ...
   worker:
-    image: openproject-project-groups:17-slim
+    image: openproject-whisperer:17-slim
     # ...
   seeder:
-    image: openproject-project-groups:17-slim
+    image: openproject-whisperer:17-slim
     # ...
 ```
 
@@ -242,8 +242,8 @@ remove the rows manually.
 For multi-host stacks, tag and push to a registry instead of building on each host:
 
 ```bash
-docker tag openproject-project-groups:17 registry.example.com/openproject-project-groups:17
-docker push registry.example.com/openproject-project-groups:17
+docker tag openproject-whisperer:17 registry.example.com/openproject-whisperer:17
+docker push registry.example.com/openproject-whisperer:17
 ```
 
 ---

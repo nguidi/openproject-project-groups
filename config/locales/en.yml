@@ -22,7 +22,12 @@ en:
     button_detach: "Detach group"
     button_remove: "Remove"
     button_add_member: "Add member"
+    label_add_member_search: "Search for a user to add"
     confirm_detach: "Detach this group and remove the roles it grants from its members in this project?"
+    confirm_remove_member: "Remove this member from the group? They lose the roles it grants them in this project."
+    dialog:
+      detach_title: "Detach group"
+      remove_title: "Remove member"
     no_groups: "No groups attached to this project yet."
     no_attachable_groups: "All groups are already attached to this project."
     no_members: "No members yet."

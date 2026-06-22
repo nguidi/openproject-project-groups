@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.version     = OpenProject::ProjectGroups::VERSION
   s.authors     = "Neri Guidi"
   s.email       = "neri.guidi@gmail.com"
-  s.homepage    = "https://github.com/neriguidi/openproject-project_groups"
+  s.homepage    = "https://github.com/nguidi/openproject-project-groups"
   s.summary     = "OpenProject Project Groups"
   s.description = "Project-scoped group membership: add users to reusable groups " \
                   "per project, materialized as native project members with the " \

@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-22
+
+### Changed
+- The "add member to group" picker is now OpenProject's `opce-user-autocompleter`
+  (server-backed typeahead over active principals via `/api/v3/principals`) instead of
+  a full `<select>` of every user. The controller no longer preloads `@candidate_users`.
+- Destructive confirmations now use OpenProject's native `Primer::Alpha::Dialog` modal
+  (with a danger Turbo `DELETE` action) instead of the browser's `confirm()` dialog.
+  **Removing a member now also asks for confirmation** (previously one-click).
+
 ## [0.1.0] - 2026-06-21
 
 Initial release. Project-scoped group membership for OpenProject: add users to a
@@ -40,5 +50,6 @@ the group's roles — without the native cross-project propagation.
   patch specs (validations, `Assignment#roles`, `Membership` delegations,
   `table_name_prefix` and FK-cascade wiring).
 
-[Unreleased]: https://github.com/neriguidi/openproject-project_groups/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/neriguidi/openproject-project_groups/releases/tag/v0.1.0
+[Unreleased]: https://github.com/nguidi/openproject-project-groups/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/nguidi/openproject-project-groups/releases/tag/v0.1.0

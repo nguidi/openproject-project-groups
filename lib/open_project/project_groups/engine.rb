@@ -34,7 +34,7 @@ module OpenProject
       include OpenProject::Plugins::ActsAsOpEngine
 
       register "openproject-project_groups",
-               author_url: "https://github.com/neriguidi/openproject-project_groups",
+               author_url: "https://github.com/nguidi/openproject-project-groups",
                name: "OpenProject Project Groups",
                bundled: false do
         # "Groups and Members" is a per-project module so it can be toggled in

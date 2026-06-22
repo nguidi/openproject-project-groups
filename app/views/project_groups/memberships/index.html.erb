@@ -62,30 +62,54 @@
               <%= render(Primer::Beta::Label.new(scheme: :attention, mr: 1)) { t("project_groups.no_roles_short") } %>
             <% end %>
           </div>
-          <%= form_with url: project_groups_detach_group_path(project_id: @project, assignment_id: assignment.id),
-                        method: :delete,
-                        data: { turbo_confirm: t("project_groups.confirm_detach") },
-                        class: "d-inline-flex" do %>
-            <%= render(Primer::Beta::Button.new(scheme: :invisible, size: :small, type: :submit)) do |button|
-                  button.with_leading_visual_icon(icon: :trash)
-                  t("project_groups.button_detach")
-                end %>
-          <% end %>
+          <% detach_dialog_id = "pg-detach-dialog-#{assignment.id}" %>
+          <%= render(Primer::Beta::Button.new(scheme: :invisible, size: :small,
+                                              data: { show_dialog_id: detach_dialog_id })) do |button|
+                button.with_leading_visual_icon(icon: :trash)
+                t("project_groups.button_detach")
+              end %>
         </div>
+        <%= render(Primer::Alpha::Dialog.new(id: detach_dialog_id,
+                                             title: t("project_groups.dialog.detach_title"),
+                                             size: :medium)) do |dialog| %>
+          <% dialog.with_header(variant: :large) %>
+          <% dialog.with_body do %>
+            <%= t("project_groups.confirm_detach") %>
+          <% end %>
+          <% dialog.with_footer do %>
+            <%= render(Primer::Beta::Button.new(data: { close_dialog_id: detach_dialog_id })) { t(:button_cancel) } %>
+            <%= render(Primer::Beta::Button.new(scheme: :danger, tag: :a,
+                                                href: project_groups_detach_group_path(project_id: @project, assignment_id: assignment.id),
+                                                data: { turbo_method: :delete })) { t("project_groups.button_detach") } %>
+          <% end %>
+        <% end %>
       <% end %>
 
       <% assignment.memberships.each do |membership| %>
+        <% remove_dialog_id = "pg-remove-member-dialog-#{membership.id}" %>
         <% box.with_row do %>
           <div class="d-flex flex-items-center flex-justify-between">
             <span><%= membership.user.name %></span>
-            <%= form_with url: project_groups_remove_member_path(project_id: @project, id: membership.id),
-                          method: :delete, class: "d-inline-flex" do %>
-              <%= render(Primer::Beta::Button.new(scheme: :invisible, size: :small, type: :submit)) do |button|
-                    button.with_leading_visual_icon(icon: :x)
-                    t("project_groups.button_remove")
-                  end %>
-            <% end %>
+            <%= render(Primer::Beta::Button.new(scheme: :invisible, size: :small,
+                                                data: { show_dialog_id: remove_dialog_id })) do |button|
+                  button.with_leading_visual_icon(icon: :x)
+                  t("project_groups.button_remove")
+                end %>
           </div>
+          <%= render(Primer::Alpha::Dialog.new(id: remove_dialog_id,
+                                               title: t("project_groups.dialog.remove_title"),
+                                               size: :medium)) do |dialog| %>
+            <% dialog.with_header(variant: :large) %>
+            <% dialog.with_body do %>
+              <%= t("project_groups.confirm_remove_member") %>
+            <% end %>
+            <% dialog.with_footer do %>
+              <%= render(Primer::Beta::Button.new(data: { close_dialog_id: remove_dialog_id })) { t(:button_cancel) } %>
+              <%= render(Primer::Beta::Button.new(scheme: :danger, tag: :a,
+                                                  href: project_groups_remove_member_path(project_id: @project, id: membership.id),
+                                                  data: { turbo_method: :delete })) { t("project_groups.button_remove") } %>
+            <% end %>
+          <% end %>
         <% end %>
       <% end %>
 
@@ -99,11 +123,22 @@
         <%= form_with url: project_groups_add_member_path(project_id: @project), method: :post do %>
           <input type="hidden" name="assignment_id" value="<%= assignment.id %>">
           <div class="d-flex flex-items-center" style="gap: .5rem;">
-            <select name="user_id" class="form-control" aria-label="<%= t('project_groups.button_add_member') %>">
-              <% @candidate_users.each do |user| %>
-                <option value="<%= user.id %>"><%= user.name %></option>
-              <% end %>
-            </select>
+            <div class="flex-auto">
+              <%= angular_component_tag "opce-user-autocompleter",
+                    inputs: {
+                      inputName: "user_id",
+                      inputBindValue: "id",
+                      resource: "principals",
+                      url: ::API::V3::Utilities::PathHelper::ApiV3Path.principals,
+                      searchKey: "any_name_attribute",
+                      multiple: false,
+                      placeholder: t("project_groups.label_add_member_search"),
+                      filters: [
+                        { name: "type", operator: "=", values: %w[User] },
+                        { name: "status", operator: "=", values: [Principal.statuses[:active]] }
+                      ]
+                    } %>
+            </div>
             <%= render(Primer::Beta::Button.new(size: :small, type: :submit)) do |button|
                   button.with_leading_visual_icon(icon: :plus)
                   t("project_groups.button_add_member")

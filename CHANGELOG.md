@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-22
+
+### Fixed
+- **Storage (Nextcloud) folder permissions were not provisioned** for users added to a
+  group. Because `Reconcile` writes `Member`/`MemberRole` rows directly (to avoid
+  add/remove e-mails), it never published the member events the storages module listens
+  for, so its automatically-managed folder sync never ran. `Reconcile` now emits the
+  matching `MEMBER_CREATED` / `MEMBER_UPDATED` / `MEMBER_DESTROYED` event after commit
+  (with `send_notifications: false`, so the storage sync runs but no e-mails are sent) —
+  mirroring OpenProject's own `Notifications::GroupMemberAlteredJob`. Any other
+  event-driven integration now reacts to our materialised members too.
+
 ## [0.3.0] - 2026-06-22
 
 ### Changed
@@ -65,7 +77,8 @@ the group's roles — without the native cross-project propagation.
   patch specs (validations, `Assignment#roles`, `Membership` delegations,
   `table_name_prefix` and FK-cascade wiring).
 
-[Unreleased]: https://github.com/nguidi/openproject-project-groups/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/nguidi/openproject-project-groups/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/nguidi/openproject-project-groups/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nguidi/openproject-project-groups/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nguidi/openproject-project-groups/releases/tag/v0.1.0

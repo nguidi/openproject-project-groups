@@ -482,13 +482,13 @@ Remaining polish: a per-user **provenance** summary, and a richer member picker
       so the prod Dockerfile is minimal.
 - [x] Upgrade / rollback / version-pinning notes (DEPLOYMENT.md §5–§6).
 - [x] **Built & runtime-smoke-tested** the **slim** artifact
-      `openproject-whisperer:17-slim` (the compose/Helm deploy image) via the
+      `openproject-whispergate:17-slim` (the compose/Helm deploy image) via the
       official multi-stage build (`deploy/Dockerfile.slim`). `deploy/smoke-test.yml`
       boots it in **production mode** against a throwaway Postgres → schema builds, all
       4 plugin migrations run, and `SMOKE_RESULT ok=true` (module registered, 4 tables
       present, permissions live). The smoke harness is image-aware (slim has no
       `db/structure.sql`, so it migrates from scratch); the single-stage all-in-one
-      `openproject-whisperer:17` is also verified. Re-run pinned to your exact
+      `openproject-whispergate:17` is also verified. Re-run pinned to your exact
       patch tag before going live.
 
 ## 8. Development environment, build & deploy
@@ -567,7 +567,7 @@ Option A as a ready-to-use kit in **`deploy/`** (slim production = official mult
 ```bash
 # from the repo root, pin OPENPROJECT_TAG to your version (without -slim):
 OPENPROJECT_TAG=17 ./deploy/build.sh
-# → builds  openproject-whisperer:17-slim  (via deploy/Dockerfile.slim)
+# → builds  openproject-whispergate:17-slim  (via deploy/Dockerfile.slim)
 ```
 
 `deploy/Dockerfile.slim` follows OpenProject's **multi-stage** technique: it builds the
@@ -578,7 +578,7 @@ backend-only (no JS/CSS), so the slim image's own assets suffice. (`deploy/Docke
 is a single-stage variant for a quick all-in-one eval.)
 
 Then point **every** OpenProject service (`web`, `worker`, `seeder`) in the stack's
-`docker-compose.yml` at `openproject-whisperer:<tag>-slim` instead of the stock
+`docker-compose.yml` at `openproject-whispergate:<tag>-slim` instead of the stock
 image and `docker compose up -d`. Pending migrations (core + our four tables) run on
 boot. Run `rake project_groups:reconcile_all` once after first deploy; `rake
 project_groups:check` reports core-propagation conflicts.
@@ -704,11 +704,16 @@ read, write and share access permissions (according to defined File storages
 permissions in the project) to this folder."*
 
 Because this plugin materializes **real native project members** with the group's
-roles, **Nextcloud folder access is provisioned automatically** by OpenProject's
-existing storage sync — read/write/share follows from the file-storage permissions
-in the role. So a *"Nextcloud-oriented role"* is just an OpenProject role that
-includes those permissions; **this plugin needs no direct Nextcloud calls** for the
-project folder. (Source: [project-settings files](https://www.openproject.org/docs/user-guide/projects/project-settings/files/).)
+roles, **Nextcloud folder access follows from those memberships** — read/write/share
+per the file-storage permissions in the role. The provisioning is **event-driven**:
+the storages module debounces its folder sync on `MEMBER_CREATED/UPDATED/DESTROYED`.
+Since we write members directly (not via `Members::CreateService`), `Reconcile` **emits
+those events itself** after commit (`send_notifications: false`) — exactly like core's
+group-inheritance flow (`Notifications::GroupMemberAlteredJob`) — so the sync runs
+**without** add/remove e-mails. (v0.3.1 fixed a gap where these events weren't emitted,
+so folder permissions never synced.) So a *"Nextcloud-oriented role"* is just an
+OpenProject role with those permissions; **this plugin still makes no direct Nextcloud
+calls**. (Source: [project-settings files](https://www.openproject.org/docs/user-guide/projects/project-settings/files/).)
 
 ### Reality check on the 8 groups
 

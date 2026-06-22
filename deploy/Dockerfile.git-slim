@@ -8,7 +8,7 @@
 #
 # Build context = a folder containing this file + a `Gemfile.plugins` (the git variant):
 #   docker build -f Dockerfile --build-arg OPENPROJECT_TAG=17 \
-#                -t openproject-whisperer:17-slim --pull .
+#                -t openproject-whispergate:17-slim --pull .
 #   # (rename Dockerfile.git-slim -> Dockerfile and Gemfile.plugins.git -> Gemfile.plugins
 #   #  when you drop them into /setup/openproject)
 #

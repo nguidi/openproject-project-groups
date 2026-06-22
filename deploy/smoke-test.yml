@@ -3,7 +3,7 @@
 # runs our migrations, and asserts the plugin is wired up.
 #
 #   docker build -f deploy/Dockerfile --build-arg OPENPROJECT_TAG=17 \
-#                -t openproject-whisperer:17 .
+#                -t openproject-whispergate:17 .
 #   docker compose -f deploy/smoke-test.yml up --abort-on-container-exit \
 #                  --exit-code-from smoke-app
 #   docker compose -f deploy/smoke-test.yml down -v
@@ -22,7 +22,7 @@ services:
       retries: 30
 
   smoke-app:
-    image: ${SMOKE_IMAGE:-openproject-whisperer:17}
+    image: ${SMOKE_IMAGE:-openproject-whispergate:17}
     depends_on:
       smoke-db:
         condition: service_healthy

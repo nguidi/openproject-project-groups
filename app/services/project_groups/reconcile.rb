@@ -33,7 +33,12 @@ module ProjectGroups
   #
   # Like core's group inheritance, derived roles are written directly (not via
   # Members::CreateService) to avoid notification side effects; an emptied member
-  # is destroyed.
+  # is destroyed. After committing a change it emits the matching member event
+  # (MEMBER_CREATED / MEMBER_UPDATED / MEMBER_DESTROYED, send_notifications: false) so
+  # event-driven integrations react exactly as they do for native group-inherited
+  # members — notably the storages module's automatically-managed Nextcloud folder
+  # permission sync (it debounces on those events; the e-mail mailer is suppressed by
+  # send_notifications: false). Mirrors Notifications::GroupMemberAlteredJob.
   class Reconcile
     def self.call(user:, project:)
       new(user:, project:).call
@@ -61,25 +66,48 @@ module ProjectGroups
     end
 
     def call
-      ApplicationRecord.transaction { reconcile }
+      outcome = nil
+      ApplicationRecord.transaction { outcome = reconcile }
+      # Publish AFTER commit so subscribers (storage sync, etc.) never act on a
+      # rolled-back change. send_notifications: false → no add/remove e-mails (README §9).
+      publish_member_event(outcome) if outcome
+      outcome
     end
 
     private
 
     attr_reader :user, :project
 
+    # Returns nil when already in sync (no event), else { member:, event: } describing
+    # what changed so #call can publish the matching member event after commit.
     def reconcile
       desired = desired_role_ids
       member = find_member
+      existed = member.present?
       managed = managed_member_roles(member)
 
       present_role_ids = member ? member.member_roles.map(&:role_id) : []
       to_add = desired - present_role_ids                            # absent & wanted
       to_remove = managed.reject { |mr| desired.include?(mr.role_id) } # ours & no longer wanted
+      return nil if to_add.empty? && to_remove.empty?                # already in sync
 
       member = add_roles(member, to_add) if to_add.any?
       remove_member_roles(to_remove) if to_remove.any?
-      destroy_member_if_empty(member)
+      destroyed = destroy_member_if_empty(member)
+
+      { member:, event: member_event(existed:, destroyed:) }
+    end
+
+    def member_event(existed:, destroyed:)
+      return OpenProject::Events::MEMBER_DESTROYED if destroyed
+
+      existed ? OpenProject::Events::MEMBER_UPDATED : OpenProject::Events::MEMBER_CREATED
+    end
+
+    def publish_member_event(outcome)
+      OpenProject::Notifications.send(outcome[:event],
+                                      member: outcome[:member],
+                                      send_notifications: false)
     end
 
     # Project roles granted by every group the user belongs to *in this project*.
@@ -123,11 +151,13 @@ module ProjectGroups
       member_roles.each(&:destroy!)
     end
 
+    # Returns true if the member was destroyed (no managed/other roles left).
     def destroy_member_if_empty(member)
-      return unless member
-      return if member.member_roles.reload.any?
+      return false unless member
+      return false if member.member_roles.reload.any?
 
       member.destroy!
+      true
     end
   end
 end

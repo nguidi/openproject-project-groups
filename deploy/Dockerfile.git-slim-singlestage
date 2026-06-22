@@ -9,7 +9,7 @@
 #
 # Build context = a folder with this file + a `Gemfile.plugins` (the git variant):
 #   docker build -f Dockerfile --build-arg OPENPROJECT_TAG=17-slim \
-#                -t openproject-whisperer:17-slim --pull .
+#                -t openproject-whispergate:17-slim --pull .
 #
 # Pass OPENPROJECT_TAG as your EXACT slim tag (e.g. 17-slim or 17.5.1-slim). Runtime
 # needs no git/network; the cloned gem is vendored into the bundle.

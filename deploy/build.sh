@@ -3,16 +3,16 @@
 # OpenProject's official multi-stage technique (build on the full image, copy into
 # slim). This is the image to run in a docker-compose / Helm (slim) stack.
 #
-#   OPENPROJECT_TAG=17 ./deploy/build.sh        # → openproject-whisperer:17-slim
+#   OPENPROJECT_TAG=17 ./deploy/build.sh        # → openproject-whispergate:17-slim
 #   OPENPROJECT_TAG=17.5.1 ./deploy/build.sh    # pin to your exact version
 #
 # (For a quick all-in-one eval instead, build the single-stage Dockerfile directly:
 #   docker build -f deploy/Dockerfile --build-arg OPENPROJECT_TAG=17 \
-#                -t openproject-whisperer:17 --pull .)
+#                -t openproject-whispergate:17 --pull .)
 set -euo pipefail
 
 TAG="${OPENPROJECT_TAG:-17}"                       # full base tag; final image is ${TAG}-slim
-IMAGE="${IMAGE:-openproject-whisperer:${TAG}-slim}"
+IMAGE="${IMAGE:-openproject-whispergate:${TAG}-slim}"
 
 # Run from the repo root so the build context is the whole plugin.
 cd "$(dirname "$0")/.."

@@ -165,4 +165,44 @@ RSpec.describe ProjectGroups::Reconcile do
 
     expect(ProjectGroups::ManagedMemberRole.count).to eq(0)
   end
+
+  # --- member events: drive storage (Nextcloud) folder-permission sync ------
+  # We write Member/MemberRole directly, so we must emit the same events core's
+  # group-inheritance emits, or the storages module never syncs folder access.
+  describe "member events (storage permission sync)" do
+    it "publishes MEMBER_CREATED without notifications when a member is materialised" do
+      g = group_with_roles(role_a)
+      add_to_group(g, user, project)
+
+      expect(OpenProject::Notifications)
+        .to receive(:send)
+        .with(OpenProject::Events::MEMBER_CREATED, hash_including(send_notifications: false))
+        .and_call_original
+
+      described_class.call(user:, project:)
+    end
+
+    it "publishes MEMBER_DESTROYED when the user's last managed role is removed" do
+      g = group_with_roles(role_a)
+      membership = add_to_group(g, user, project)
+      described_class.call(user:, project:)
+      membership.destroy!
+
+      expect(OpenProject::Notifications)
+        .to receive(:send)
+        .with(OpenProject::Events::MEMBER_DESTROYED, hash_including(send_notifications: false))
+        .and_call_original
+
+      described_class.call(user:, project:)
+    end
+
+    it "publishes nothing when already in sync (idempotent re-run)" do
+      g = group_with_roles(role_a)
+      add_to_group(g, user, project)
+      described_class.call(user:, project:)
+
+      expect(OpenProject::Notifications).not_to receive(:send)
+      described_class.call(user:, project:)
+    end
+  end
 end

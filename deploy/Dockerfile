@@ -1,7 +1,7 @@
 # Production image: the official OpenProject image with the ProjectGroups plugin
 # baked in. Build from the plugin repo root (build context = the repo):
 #
-#   docker build -f deploy/Dockerfile -t openproject-whisperer:17 \
+#   docker build -f deploy/Dockerfile -t openproject-whispergate:17 \
 #                --build-arg OPENPROJECT_TAG=17 .
 #
 # Then point your stack's OpenProject service at this image (see deploy/DEPLOYMENT.md).
